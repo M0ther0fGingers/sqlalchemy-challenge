@@ -42,18 +42,29 @@ app = Flask(__name__)
 #################################################
 @app.route("/")
 def welcome():
-    return("""Welcome to the Hawaii weather page!""")
+    return("""Welcome to the Hawaii weather page!
+           Please select from: 
+           /api/v1.0/precipitation
+           /api/v1.0/stations
+           /api/v1.0/<start>
+           /api/v1.0/<start>/<end>""")
 
-@app.route("/stations")
+@app.route("/api/v1.0/precipitation")
+def precipitation():
+    one_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+    precipitation = session.query(Measurement.date, Measurement.prcp).\
+    filter(Measurement.date >= one_year).all()
+    precipitation = list(np.ravel(precipitation))
+    return jsonify(precipitation)
+    session.close()
+
+@app.route("/api/v1.0/stations")
 def stations():
-    #station_list = session.query(Measurement.station,func.count(Measurement.station)).\
-    #group_by(Measurement.station).order_by(func.count(Measurement.station).desc()).all()
-    # session.close()
-    return "help"
-#    station_list = list(np.ravel(station_list))
-    
-#    return jsonify(station_list)
-
+    station_list = session.query(Measurement.station,func.count(Measurement.station)).\
+    group_by(Measurement.station).order_by(func.count(Measurement.station).desc()).all()
+    station_list = list(np.ravel(station_list))
+    return jsonify(station_list)
+    session.close()
 
 if __name__ == "__main__": 
     app.run()
