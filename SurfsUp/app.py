@@ -39,13 +39,14 @@ app = Flask(__name__)
 #################################################
 @app.route("/")
 def welcome():
-    return("""Welcome to the Hawaii weather page!
-           Please select from: 
-           /api/v1.0/precipitation
-           /api/v1.0/stations
-           /api/v1.0/tobs
-           /api/v1.0/<start>
-           /api/v1.0/<start>/<end>""")
+    return("""Welcome to the Hawaii weather page! <br>
+           Please select from: <br>
+           /api/v1.0/precipitation <br>
+           /api/v1.0/stations <br>
+           /api/v1.0/tobs <br>
+           /api/v1.0/start_date <br>
+           /api/v1.0/start_date/end_date <br>
+           Note: start_date and end_date are user defined""")
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
@@ -54,15 +55,14 @@ def precipitation():
     filter(Measurement.date >= one_year).all()
     precipitation = list(np.ravel(precipitation))
     return jsonify(precipitation)
-    session.close()
 
 @app.route("/api/v1.0/stations")
 def stations():
     station_list = session.query(Measurement.station,func.count(Measurement.station)).\
     group_by(Measurement.station).order_by(func.count(Measurement.station).desc()).all()
     station_list = list(np.ravel(station_list))
-    return jsonify(station_list)
     session.close()
+    return jsonify(station_list)
 
 @app.route("/api/v1.0/tobs")
 def temps():
@@ -70,17 +70,32 @@ def temps():
     temps = session.query(Measurement.date, Measurement.tobs).\
     filter(Measurement.date >= one_year, Measurement.station == "USC00519281").all()
     temps = list(np.ravel(temps))
-    return jsonify(temps)
     session.close()
+    return jsonify(temps)
 
-@app.route("/api/v1.0/<start>")
-def stats(start):
+# @app.route("/api/v1.0/<start>")
+# def stats(start):
+#     stats_start = session.query(func.min(Measurement.tobs),func.max(Measurement.tobs),func.avg(Measurement.tobs)).\
+#     where(Measurement.date >= start).all()
+#     print(stats_start)
+#     stats_start = list(np.ravel(stats_start))
+#     session.close()
+#     return jsonify(stats_start)
+
+@app.route("/api/v1.0/<start>", defaults={"end":None})
+@app.route("/api/v1.0/<start>/<end>")
+def stats(start, end):
+
+    if end:
+        stats_start = session.query(Measurement.date >= start, Measurement.date <= end)
+    else:
+        stats_start = session.query(Measurement.date>= start)
     stats_start = session.query(func.min(Measurement.tobs),func.max(Measurement.tobs),func.avg(Measurement.tobs)).\
     where(Measurement.date >= start).all()
     print(stats_start)
     stats_start = list(np.ravel(stats_start))
+    session.close()
     return jsonify(stats_start)
-session.close()
 
 if __name__ == "__main__": 
     app.run()
